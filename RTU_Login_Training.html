@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Wave RTU Calibration Mode Training - Revised</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #e9ecef;
+            --success-color: #28a745;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* --- Progress Bar --- */
+        #progress-container {
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 15px;
+        }
+
+        #progress-bar {
+            height: 25px;
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-color);
+            transition: width 0.4s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #progress-text {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+            padding-left: 10px; 
+        }
+
+        /* --- Step Display --- */
+        #step-display {
+            border: 1px solid var(--secondary-color);
+            padding: 20px;
+            min-height: 120px;
+            border-radius: var(--border-radius);
+            background: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        #current-step-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        #current-step-text {
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, opacity 0.3s;
+            font-size: 1em;
+            width: auto;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #004085;
+        }
+        
+        /* --- Completion Message --- */
+        #completion-message {
+            text-align: center;
+            padding: 30px;
+            background-color: #d4edda;
+            color: var(--success-color);
+            border: 1px solid #c3e6cb;
+            border-radius: var(--border-radius);
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        /* --- Checklist --- */
+        #checklist-container {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border-radius: var(--border-radius);
+        }
+
+        #checklist-container h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        #checklist {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #checklist li {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+            display: flex;
+            align-items: center;
+        }
+
+        #checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .step-status-icon {
+            font-size: 1.2em;
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .status-pending { color: #6c757d; }
+        .status-active { color: orange; font-weight: bold; }
+        .status-complete { color: var(--success-color); }
+        
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Control Wave RTU Calibration Mode Access</h1>
+    
+    <div id="progress-container">
+        <p id="progress-label" style="text-align: right; margin-bottom: 5px; font-weight: 500;">Step 1 of 16</p>
+        <div id="progress-bar">
+            <div id="progress-fill">
+                <span id="progress-text">0%</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="step-display">
+        <span id="current-step-number"></span>
+        <span id="current-step-text"></span>
+    </div>
+    
+    <button class="btn btn-primary" id="continue-btn">Mark Complete and Continue</button>
+
+    <div id="completion-message" style="display: none;"></div>
+
+    <hr style="margin-top: 30px; border-color: #ccc;">
+
+    <div id="checklist-container">
+        <h3>Procedure Checklist</h3>
+        <ul id="checklist">
+            </ul>
+    </div>
+    
+</div>
+
+<script>
+    const steps = [
+        "Call Gas Control and inform them that you want to go into Calibration Mode and stay on phone with them while you are doing this.",
+        "Press F4 “Exit” to home screen (if not already there)",
+        "Press F1 “LOGIN”",
+        "Use arrows to find your employee number", // Step 4
+        "Press “Enter”",
+        "Enter your SCADA password", // Step 6
+        "Press “Enter”",
+        "Press F2 “Menu”",
+        "Press F2 “Next” until “Calibration shows on top line",
+        "Press F3 “Sel” (select)",
+        "Press F2 “Write”",
+        "Press F3 “Chng” (change)",
+        "Press up or down arrow to change from “False” to “True”",
+        "Press “Enter”",
+        "Press F4 “Exit” until you are back at home screen",
+        "Confirm with Gas Control that you are in “Calibration Mode”"
+    ];
+
+    let currentStepIndex = 0;
+    const totalSteps = steps.length;
+
+    // DOM Elements
+    const stepNumberEl = document.getElementById('current-step-number');
+    const stepTextEl = document.getElementById('current-step-text');
+    const continueBtn = document.getElementById('continue-btn');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const progressLabel = document.getElementById('progress-label');
+    const completionMessage = document.getElementById('completion-message');
+    const checklistEl = document.getElementById('checklist');
+
+    // --- Initialization: Build Checklist ---
+    function buildChecklist() {
+        checklistEl.innerHTML = '';
+        steps.forEach((step, index) => {
+            const li = document.createElement('li');
+            li.id = `checklist-step-${index}`;
+            li.innerHTML = `
+                <span class="step-status-icon status-pending" id="status-icon-${index}">•</span>
+                <span class="step-number-text">${index + 1}.</span> ${step}
+            `;
+            checklistEl.appendChild(li);
+        });
+    }
+
+    // --- Core Logic: Update UI ---
+    function updateUI() {
+        if (currentStepIndex < totalSteps) {
+            // 1. Update Current Step Display
+            stepNumberEl.textContent = `STEP ${currentStepIndex + 1}:`;
+            stepTextEl.textContent = steps[currentStepIndex];
+
+            // 2. Update Progress Bar
+            const progress = Math.round((currentStepIndex / totalSteps) * 100);
+            progressFill.style.width = `${progress}%`;
+            // Ensure progress bar text is visible if progress is > 10%
+            progressText.textContent = `${progress}%`;
+            progressLabel.textContent = `Step ${currentStepIndex + 1} of ${totalSteps}`;
+
+            // 3. Update Checklist Status
+            const previousStepIndex = currentStepIndex - 1;
+            if (previousStepIndex >= 0) {
+                const prevIcon = document.getElementById(`status-icon-${previousStepIndex}`);
+                prevIcon.textContent = '✓';
+                prevIcon.classList.remove('status-active', 'status-pending');
+                prevIcon.classList.add('status-complete');
+            }
+
+            const currentIcon = document.getElementById(`status-icon-${currentStepIndex}`);
+            currentIcon.textContent = '▶';
+            currentIcon.classList.remove('status-pending', 'status-complete');
+            currentIcon.classList.add('status-active');
+
+            // Scroll to the active step in the checklist
+            document.getElementById(`checklist-step-${currentStepIndex}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        } else {
+            // --- Final Completion State ---
+            stepNumberEl.textContent = '';
+            stepTextEl.textContent = '';
+            continueBtn.style.display = 'none';
+            
+            // Final Progress update
+            progressFill.style.width = `100%`;
+            progressText.textContent = `100%`;
+            progressLabel.textContent = `Procedure Complete`;
+
+            // Final Checklist update
+            const lastStepIndex = totalSteps - 1;
+            const lastIcon = document.getElementById(`status-icon-${lastStepIndex}`);
+            lastIcon.textContent = '✓';
+            lastIcon.classList.remove('status-active');
+            lastIcon.classList.add('status-complete');
+
+            // Display final message
+            completionMessage.style.display = 'block';
+            completionMessage.innerHTML = '<strong>Procedure Complete!</strong> You are now in Calibration Mode. Remember to inform Gas Control when exiting.';
+        }
+    }
+
+    // --- Event Handler: Handle "Mark Complete and Continue" ---
+    continueBtn.addEventListener('click', () => {
+        if (currentStepIndex < totalSteps) {
+            currentStepIndex++;
+            updateUI();
+        }
+    });
+
+    // --- Start Application ---
+    buildChecklist();
+    updateUI();
+
+</script>
+</body>
+</html>
